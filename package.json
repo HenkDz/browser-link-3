@@ -8,7 +8,8 @@
     "build": "vite build",
     "start": "electron dist-electron/main.js",
     "lint": "eslint . --ext .ts,.tsx",
-    "package": "npm run build && electron-builder"
+    "package": "npm run build && electron-builder",
+    "release": "npm run build && electron-builder --publish always"
   },
   "keywords": [
     "electron",
@@ -103,6 +104,11 @@
         "deb"
       ],
       "category": "Utility"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "HenkDz",
+      "repo": "browser-link-3"
     }
   }
 }
