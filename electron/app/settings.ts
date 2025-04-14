@@ -13,6 +13,10 @@ const schemaDefinition = {
     type: ['string', 'null'] as const,
     default: null
   },
+  showNotificationOnSuccess: {
+    type: 'boolean' as const,
+    default: true
+  },
   rules: {
     type: 'array' as const,
     default: [],

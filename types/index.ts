@@ -32,6 +32,7 @@ export interface Settings {
   // Potential future settings:
   launchAtStartup?: boolean;
   minimizeToTray?: boolean;
+  showNotificationOnSuccess?: boolean;
   // checkForUpdates?: boolean;
 }
 

@@ -136,6 +136,23 @@ export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
                  onCheckedChange={(checked: boolean) => handleSettingChange('minimizeToTray', checked)}
              />
          </div>
+
+         {/* --- Show Notification Setting --- */}
+         <div className="flex items-center justify-between space-x-4">
+             <div className="space-y-1">
+                 <Label htmlFor="show-notification">
+                     Show Notification on Link Open
+                 </Label>
+                 <p className="text-sm text-muted-foreground">
+                     Display a system notification when a link is opened successfully.
+                 </p>
+             </div>
+             <Switch
+                 id="show-notification"
+                 checked={settings?.showNotificationOnSuccess ?? true} // Default to true if setting is missing initially
+                 onCheckedChange={(checked: boolean) => handleSettingChange('showNotificationOnSuccess', checked)}
+             />
+         </div>
       </CardContent>
     </Card>
   );

@@ -93,8 +93,9 @@ async function handleUrl(url: string): Promise<void> {
     try {
       await open(url, { app: { name: finalPath }, wait: false });
 
-      // Show notification on success
-      if (Notification.isSupported()) {
+      // Show notification on success only if enabled
+      const showNotification = typedStore.get('showNotificationOnSuccess');
+      if (showNotification && Notification.isSupported()) {
         const notification = new Notification({
           title: `${APP_NAME} Rule Matched`, // Use app name from config
           //body: `Opened in ${displayName}`,
