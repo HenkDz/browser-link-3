@@ -28,45 +28,11 @@ function createMenu(): void {
       ]
     },
     {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' as const },
-        { role: 'redo' as const },
-        { type: 'separator' as const },
-        { role: 'cut' as const },
-        { role: 'copy' as const },
-        { role: 'paste' as const },
-        ...(process.platform === 'darwin' ? [
-          { role: 'pasteAndMatchStyle' as const },
-          { role: 'delete' as const },
-          { role: 'selectAll' as const },
-          { type: 'separator' as const },
-          {
-            label: 'Speech',
-            submenu: [
-              { role: 'startSpeaking' as const },
-              { role: 'stopSpeaking' as const }
-            ]
-          }
-        ] : [
-          { role: 'delete' as const },
-          { type: 'separator' as const },
-          { role: 'selectAll' as const }
-        ])
-      ]
-    },
-    {
       label: 'View',
       submenu: [
         { role: 'reload' as const },
         { role: 'forceReload' as const },
         { role: 'toggleDevTools' as const },
-        { type: 'separator' as const },
-        { role: 'resetZoom' as const },
-        { role: 'zoomIn' as const },
-        { role: 'zoomOut' as const },
-        { type: 'separator' as const },
-        { role: 'togglefullscreen' as const }
       ]
     },
     {
@@ -91,7 +57,7 @@ function createMenu(): void {
           label: 'Learn More (GitHub)',
           click: async () => {
             // TODO: Update this link to the actual repository URL
-            await shell.openExternal('https://github.com/your-repo-here');
+            await shell.openExternal('https://github.com/HenkDz/browser-link-3');
           }
         }
       ]

@@ -3,6 +3,10 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/HenkDz/browser-link-3) <!-- Placeholder -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) <!-- Placeholder -->
 
+<p align="center">
+  <img src="logox1024.png" alt="Browser Link Logo" width="200">
+</p>
+
 **Tired of manually switching browsers for different websites or tasks? Browser Link intercepts web links and intelligently routes them to the right browser based on your custom rules.**
 
 ## The Problem
@@ -31,6 +35,14 @@ Browser Link acts as your system's default HTTP/HTTPS handler. When you click a 
 *   **Set as Default Handler:** Registers itself to handle `http://` and `https://` links system-wide (requires appropriate permissions).
 *   **Single Instance:** Ensures only one instance runs, handling subsequent link clicks gracefully.
 *   **Cross-Platform (Goal):** Built with Electron, aiming for compatibility with Windows, macOS, and Linux.
+
+## Screenshots
+
+<p align="center">
+  <img src="screenshot (1).png" alt="Screenshot 1" width="400" style="margin: 10px;">
+  <img src="screenshot (2).png" alt="Screenshot 2" width="400" style="margin: 10px;">
+  <img src="screenshot (3).png" alt="Screenshot 3" width="400" style="margin: 10px;">
+</p>
 
 ## How it Works
 
