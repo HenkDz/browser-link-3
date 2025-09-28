@@ -4,9 +4,10 @@ import { Toaster as Sonner } from './ui/sonner.js';
 
 interface LayoutProps {
   children: React.ReactNode;
+  version?: string;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, version }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground p-8 flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -14,6 +15,11 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center space-x-2">
             <Globe className="h-6 w-6" />
             <span className="font-bold">Browser Link</span>
+            {version ? (
+              <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                v{version}
+              </span>
+            ) : null}
           </div>
         </div>
       </header>
@@ -30,4 +36,4 @@ export function Layout({ children }: LayoutProps) {
       <Sonner />
     </div>
   );
-} 
+}

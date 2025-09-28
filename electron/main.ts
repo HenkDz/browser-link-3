@@ -1,6 +1,5 @@
 import { app } from 'electron';
 import ElectronStore from 'electron-store';
-import { v4 as uuidv4 } from 'uuid'; // Use uuid for rule IDs
 import { detectBrowsersWithIcons } from './browser-detector.js'; // Import the icon fetching version
 import type { Settings, Rule, DetectedBrowser } from '../types/index.js'; // Add .js extension
 import path from 'node:path'; // Re-add path
@@ -8,10 +7,11 @@ import { fileURLToPath } from 'node:url'; // Re-add fileURLToPath
 
 // Import functions from the new modules
 import { setupSingleInstanceLock, setupLifecycleEvents, initialUrlToOpen } from './app/lifecycle.js';
-import { createWindow } from './app/window.js';
+import { createWindow, getMainWindow } from './app/window.js';
 import { createMenu } from './app/menu.js';
 import { updateAvailableBrowsers, handleUrl } from './app/browsers.js';
 import { registerIpcHandlers } from './app/ipc.js';
+import { initializeAutoUpdater } from './app/updates.js';
 
 // Re-add ESM __dirname equivalent - needed for path calculation
 const __filename = fileURLToPath(import.meta.url);
@@ -91,15 +91,17 @@ app.whenReady().then(async () => {
 
   // Create the application menu
   createMenu();
-
+ 
   // Calculate paths for the window
   const preloadPath = path.join(__dirname, 'preload.js');
   const loadUrl = app.isPackaged
     ? path.join(__dirname, '../dist/renderer/index.html') // Adjust if renderer output is elsewhere
     : 'http://localhost:3000';
-
+ 
   // Create the main window, passing the calculated paths
   createWindow(preloadPath, loadUrl);
+
+  initializeAutoUpdater(getMainWindow);
 
   // Setup lifecycle event handlers (activate, open-url, window-all-closed)
   setupLifecycleEvents(); 

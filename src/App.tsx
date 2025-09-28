@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import type { Settings, Rule, DetectedBrowser, ElectronApi } from '../types/index.js'; // Adjusted path
+import type { Settings, Rule, DetectedBrowser, ElectronApi, AppInfo } from '../types/index.js'; // Adjusted path
 import { Layout } from './components/Layout.js'; // Use alias
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs.js'; // Use alias
 import { RulesTab } from './components/tabs/RulesTab.js'; // Use alias
@@ -259,6 +259,7 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('rules');
+  const [appVersion, setAppVersion] = useState<string>('');
 
   // --- Data Loading --- 
   const loadData = useCallback(async (showLoading = true) => {
@@ -271,12 +272,14 @@ function App() {
       // Use Promise.allSettled to handle potential errors individually
       const results = await Promise.allSettled([
         window.electronApi.getSettings(),
-        window.electronApi.getAvailableBrowsers()
+        window.electronApi.getAvailableBrowsers(),
+        window.electronApi.getAppInfo()
       ]);
 
       let fetchedSettings: Settings | null = null;
       let fetchedBrowsers: DetectedBrowser[] = [];
       let fetchError: string | null = null;
+      let fetchedVersion: string | null = null;
 
       if (results[0].status === 'fulfilled') {
           fetchedSettings = results[0].value;
@@ -296,8 +299,20 @@ function App() {
           fetchedBrowsers = []; // Ensure it's an empty array on error
       }
 
+      if (results[2].status === 'fulfilled') {
+          const info = results[2].value as AppInfo;
+          fetchedVersion = info?.version ?? null;
+      } else {
+          console.error('App: Error fetching app info:', results[2].reason);
+          const infoError = `Failed to read app version: ${results[2].reason?.message || 'Unknown error'}`;
+          fetchError = fetchError ? `${fetchError}; ${infoError}` : infoError;
+      }
+
       setSettings(fetchedSettings);
       setAvailableBrowsers(fetchedBrowsers);
+      if (fetchedVersion) {
+        setAppVersion(fetchedVersion);
+      }
       setError(fetchError);
       if(fetchError) {
           toast.error(fetchError); // Show toast for loading errors
@@ -322,7 +337,7 @@ function App() {
 
   // --- Rendering ---
   return (
-    <Layout>
+    <Layout version={appVersion}>
       {loading && (
         <div className="flex justify-center items-center pt-10">
            <p className="text-lg text-muted-foreground">Loading configuration...</p>
@@ -359,9 +374,10 @@ function App() {
               </TabsContent>
               <TabsContent value="settings">
                   <SettingsTab
-                      settings={settings}
-                      onDataRefresh={loadData}
-                  />
+                       settings={settings}
+                       onDataRefresh={loadData}
+                       appVersion={appVersion}
+                   />
               </TabsContent>
             </Tabs>
       )}
@@ -386,4 +402,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

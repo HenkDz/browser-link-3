@@ -35,6 +35,7 @@ function createWindow(preloadPath: string, loadUrl: string): void {
     height: 900,
     icon: path.join(__dirname_window, 'assets', 'icon.png'),
     show: false,
+    title: `Browser Link v${app.getVersion()}`,
     webPreferences: {
       preload: preloadPath,
       nodeIntegration: false,
@@ -70,4 +71,4 @@ function getMainWindow(): BrowserWindow | null {
     return mainWindow;
 }
 
-export { createWindow, getMainWindow }; 
+export { createWindow, getMainWindow };

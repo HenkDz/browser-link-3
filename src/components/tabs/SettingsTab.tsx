@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import type { Settings } from '../../../types/index.js'; // Corrected relative path with .js
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { Settings, UpdateStatus } from '../../../types/index.js'; // Corrected relative path with .js
 import { Button } from '../ui/button.js'; // Use alias
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card.js'; // Use alias
 import { toast } from "sonner"; // Use sonner
@@ -9,22 +9,113 @@ import { Switch } from '../ui/switch.js'; // Corrected path
 interface SettingsTabProps {
   settings: Settings | null; // Settings might be null initially
   onDataRefresh: () => Promise<void>;
+  appVersion: string;
 }
 
-export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
+export function SettingsTab({ settings, onDataRefresh, appVersion }: SettingsTabProps) {
 
-  // --- NEW: Action function to open settings ---
-  // Wrap in useCallback to ensure stable identity for dependency array
-  const openSettingsAction = useCallback(async () => {
-    console.log('Attempting to open default apps settings...');
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({
+    state: 'idle',
+    currentVersion: appVersion
+  });
+  const [isCheckingForUpdate, setIsCheckingForUpdate] = useState(false);
+  const [isDownloadingUpdate, setIsDownloadingUpdate] = useState(false);
+  const userInitiatedRef = useRef(false);
+
+  useEffect(() => {
+    setUpdateStatus(prev => ({ ...prev, currentVersion: appVersion }));
+  }, [appVersion]);
+
+  useEffect(() => {
+    const unsubscribe = window.electronApi.onUpdateStatus(status => {
+      setUpdateStatus(status);
+
+      if (status.state === 'available') {
+        if (userInitiatedRef.current) {
+          toast.info(`Update ${status.availableVersion ?? ''} is available.`);
+          userInitiatedRef.current = false;
+        }
+      } else if (status.state === 'not-available' && userInitiatedRef.current) {
+        toast.success('Browser Link is up to date.');
+        userInitiatedRef.current = false;
+      } else if (status.state === 'downloaded') {
+        toast.success(`Update ${status.availableVersion ?? ''} downloaded. Restart to install.`);
+        userInitiatedRef.current = false;
+      } else if (status.state === 'error' && userInitiatedRef.current) {
+        toast.error(status.message || 'Update process failed.');
+        userInitiatedRef.current = false;
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const openAppDefaults = useCallback(async () => {
+    console.log('Attempting to open Browser Link default app page...');
     const result = await window.electronApi.openDefaultAppsSettings();
     if (!result.success) {
-      toast.error(`Could not open settings: ${result.error || 'Unknown error'}`);
+      toast.error(`Could not open default app settings: ${result.error || 'Unknown error'}`);
     }
-  }, []); // No dependencies needed for this action
+  }, []);
 
-  // Handler for the first button (Attempt Registration)
-  const handleRegisterAsDefault = useCallback(async () => {
+  const handleCheckForUpdates = useCallback(async () => {
+    userInitiatedRef.current = true;
+    setIsCheckingForUpdate(true);
+    try {
+      const status = await window.electronApi.checkForUpdates();
+      setUpdateStatus(status);
+      if (status.state === 'error') {
+        toast.error(status.message || 'Update check failed.');
+        userInitiatedRef.current = false;
+      }
+    } catch (error) {
+      userInitiatedRef.current = false;
+      const message = error instanceof Error ? error.message : 'Unknown error checking for updates.';
+      toast.error(`Update check failed: ${message}`);
+    } finally {
+      setIsCheckingForUpdate(false);
+    }
+  }, []);
+
+  const handleDownloadUpdate = useCallback(async () => {
+    userInitiatedRef.current = true;
+    setIsDownloadingUpdate(true);
+    try {
+      const status = await window.electronApi.downloadUpdate();
+      setUpdateStatus(status);
+      if (status.state === 'error') {
+        toast.error(status.message || 'Failed to download update.');
+        userInitiatedRef.current = false;
+      }
+    } catch (error) {
+      userInitiatedRef.current = false;
+      const message = error instanceof Error ? error.message : 'Unknown error downloading update.';
+      toast.error(`Download failed: ${message}`);
+    } finally {
+      setIsDownloadingUpdate(false);
+    }
+  }, []);
+
+  const handleInstallUpdate = useCallback(async () => {
+    try {
+      const result = await window.electronApi.installUpdate();
+      if (!result.success) {
+        toast.error(result.error || 'Failed to start update installation.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error installing update.';
+      toast.error(`Install failed: ${message}`);
+    }
+  }, []);
+
+  const downloadPercent = typeof updateStatus.downloadProgress === 'number'
+    ? Math.round(updateStatus.downloadProgress)
+    : null;
+  const canDownloadUpdate = updateStatus.state === 'available';
+  const canInstallUpdate = updateStatus.state === 'downloaded';
+ 
+   // Handler for the first button (Attempt Registration)
+   const handleRegisterAsDefault = useCallback(async () => {
     console.log('SettingsTab: Requesting registration as default handler...');
     try {
         const result = await window.electronApi.registerAsDefaultHandler();
@@ -46,7 +137,7 @@ export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
         toast.error(`Failed to register: ${message}`);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Dependencies still empty as openSettingsAction is not called directly here
+  }, []); // Dependencies intentionally left empty; this handler reads no reactive values
 
   // Placeholder for handling other setting changes (e.g., launch on startup)
   const handleSettingChange = useCallback(async (key: keyof Settings, value: boolean) => {
@@ -75,8 +166,64 @@ export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
-         {/* --- Default Handler Setting --- */}
-         <div className="space-y-3"> {/* Slightly more space */} 
+         <div className="space-y-3">
+            <h3 className="text-sm font-medium">Version &amp; Updates</h3>
+            <p className="text-sm text-muted-foreground">
+              Current version: <span className="font-mono">{appVersion || 'unknown'}</span>
+            </p>
+            {updateStatus.availableVersion && updateStatus.availableVersion !== appVersion && (
+              <p className="text-sm text-muted-foreground">
+                Latest available: <span className="font-mono">{updateStatus.availableVersion}</span>
+              </p>
+            )}
+            {updateStatus.state === 'downloading' && (
+              <p className="text-sm text-muted-foreground">
+                Downloading update... {downloadPercent !== null ? `${downloadPercent}%` : ''}
+              </p>
+            )}
+            {updateStatus.state === 'error' && updateStatus.message && (
+              <p className="text-sm text-destructive">
+                Update error: {updateStatus.message}
+              </p>
+            )}
+            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCheckForUpdates}
+                disabled={isCheckingForUpdate}
+              >
+                Check for Updates
+              </Button>
+              <Button
+                type="button"
+                onClick={handleDownloadUpdate}
+                variant={canDownloadUpdate ? 'default' : 'secondary'}
+                className={canDownloadUpdate ? 'font-semibold shadow-sm' : undefined}
+                disabled={!canDownloadUpdate || isDownloadingUpdate}
+                title={canDownloadUpdate ? 'Download the new version' : 'No update available yet'}
+              >
+                {isDownloadingUpdate ? 'Downloading…' : 'Download Update'}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleInstallUpdate}
+                disabled={!canInstallUpdate}
+              >
+                Install &amp; Restart
+              </Button>
+            </div>
+            {updateStatus.releaseNotes && (
+              <details className="rounded border border-border/60 bg-muted/30 p-3 text-sm">
+                <summary className="cursor-pointer font-medium">Release notes</summary>
+                <div className="mt-2 whitespace-pre-wrap text-muted-foreground text-xs">
+                  {updateStatus.releaseNotes}
+                </div>
+              </details>
+            )}
+         </div>
+          {/* --- Default Handler Setting --- */}
+          <div className="space-y-3"> {/* Slightly more space */} 
             <h3 className="text-sm font-medium">System Protocol Handler</h3>
              <p className="text-sm text-muted-foreground">
                  To make Browser Link handle HTTP/HTTPS links, first attempt registration, then set it manually in Windows Settings.
@@ -90,16 +237,15 @@ export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
                 >
                     1. Attempt Registration
                 </Button>
-                {/* Button 2: Open Settings */}
-                 <Button
+                <Button
                     type="button"
-                    onClick={openSettingsAction} // Directly call the open action
+                    onClick={openAppDefaults}
                 >
-                    2. Open Windows Default Apps Settings
+                    2. Open Browser Link Default Apps Page
                 </Button>
              </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                  Step 1 might require administrator privileges. Step 2 lets you choose Browser Link as the default.
+                  Step 1 might require administrator privileges. Step 2 opens the Browser Link entry so you can press "Set default" and apply all associations at once.
               </p>
          </div>
 
@@ -156,4 +302,4 @@ export function SettingsTab({ settings, onDataRefresh }: SettingsTabProps) {
       </CardContent>
     </Card>
   );
-} 
+}

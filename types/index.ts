@@ -49,6 +49,11 @@ export interface ElectronApi {
   setDefaultBrowser: (browser: DetectedBrowser | null) => Promise<{ success: boolean }>;
   registerAsDefaultHandler: () => Promise<{ success: boolean; requiresAdmin?: boolean; alreadyRegistered: boolean; message: string }>;
   openDefaultAppsSettings: () => Promise<{ success: boolean; error?: string }>;
+  getAppInfo: () => Promise<AppInfo>;
+  checkForUpdates: () => Promise<UpdateStatus>;
+  downloadUpdate: () => Promise<UpdateStatus>;
+  installUpdate: () => Promise<{ success: boolean; error?: string }>;
+  onUpdateStatus: (listener: (status: UpdateStatus) => void) => () => void;
 }
 
 // Declare the API exposed on the window object
@@ -56,4 +61,26 @@ declare global {
     interface Window {
         electronApi: ElectronApi;
     }
-} 
+}
+
+export interface AppInfo {
+  version: string;
+}
+
+export type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error';
+
+export interface UpdateStatus {
+  state: UpdateState;
+  currentVersion: string;
+  availableVersion?: string;
+  downloadProgress?: number;
+  message?: string;
+  releaseNotes?: string | null;
+}
