@@ -126,6 +126,7 @@ build/
 # Electron specific
 .electron/
 dist/
+dist-electron/
 release/
 
 # VS Code specific

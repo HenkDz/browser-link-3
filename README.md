@@ -3,103 +3,96 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/HenkDz/browser-link-3) <!-- Placeholder -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) <!-- Placeholder -->
 
-<p align="center">
-  <img src="logox1024.png" alt="Browser Link Logo" width="200">
-</p>
+![Browser Link Logo](logox1024.png)
 
-**Tired of manually switching browsers for different websites or tasks? Browser Link intercepts web links and intelligently routes them to the right browser based on your custom rules.**
+**Browser Link intercepts every HTTP/HTTPS request from your OS, matches it against your custom rules, and opens the link in the browser you prefer.**
 
-## The Problem
+## Why it exists
 
-Many of us use multiple web browsers for various reasons:
-*   Work vs. Personal browsing
-*   Specific web apps that work better in certain browsers
-*   Development and testing across different rendering engines
-*   Keeping specific accounts or sessions isolated
+Switching between browsers for different workflows is cumbersome. Common scenarios include:
 
-Manually copying and pasting links or constantly changing your default browser is tedious and inefficient.
+- separating work and personal accounts;
+- using browser-specific web apps or extensions;
+- testing sites in multiple engines;
+- isolating sessions for privacy.
 
-## The Solution
+Browser Link removes the manual steps. Set it once as your default browser and let the rule engine route links automatically.
 
-Browser Link acts as your system's default HTTP/HTTPS handler. When you click a link:
-1.  Browser Link intercepts the URL.
-2.  It checks your configured rules (e.g., "Open `*.workdomain.com` in Chrome", "Open `trello.com` in Firefox").
-3.  It launches the designated browser with the URL.
-4.  If no rule matches, it can open the URL in a default browser of your choice.
+## Key features
 
-## Features
+- **Automatic browser detection** on Windows, macOS, and Linux.
+- **Flexible rule engine** supporting domain, prefix, substring, and regex matching.
+- **Per-rule enable/disable toggles** and icons for detected browsers.
+- **Fallback browser selection** when no rule matches.
+- **Single-instance handling** with fast URL forwarding.
+- **Electron + React UI** for managing browsers, rules, and settings.
 
-*   **Automatic Browser Detection:** Detects installed browsers on your system.
-*   **Rule-Based Routing:** Define flexible rules based on URL patterns (domains, keywords, etc.) to choose the right browser.
-*   **Simple UI:** An easy-to-use interface (built with Electron and a web frontend) to manage your browsers and routing rules.
-*   **Set as Default Handler:** Registers itself to handle `http://` and `https://` links system-wide (requires appropriate permissions).
-*   **Single Instance:** Ensures only one instance runs, handling subsequent link clicks gracefully.
-*   **Cross-Platform (Goal):** Built with Electron, aiming for compatibility with Windows, macOS, and Linux.
+## How it works
+
+1. Browser Link registers itself as the system handler for `http://` and `https://`.
+2. When a link is opened, the main process loads your saved rules and detects installed browsers.
+3. The rule engine selects a target browser (or uses the configured fallback).
+4. The target browser is launched with the original URL via the `open` package.
+5. Optional notifications confirm which rule fired.
 
 ## Screenshots
 
-<p align="center">
-  <img src="screenshot (1).png" alt="Screenshot 1" width="400" style="margin: 10px;">
-  <img src="screenshot (2).png" alt="Screenshot 2" width="400" style="margin: 10px;">
-  <img src="screenshot (3).png" alt="Screenshot 3" width="400" style="margin: 10px;">
-</p>
+![Main window screenshot 1](screenshot%20(1).png)
 
-## How it Works
+![Main window screenshot 2](screenshot%20(2).png)
 
-1.  **Installation & Setup:** Install the application and grant it permission to be the default handler for web links.
-2.  **Configuration:** Use the app's UI to view detected browsers and create your routing rules.
-3.  **Click a Link:** Click any `http://` or `https://` link in any application.
-4.  **Interception:** Browser Link intercepts the request before your standard default browser does.
-5.  **Rule Matching:** It evaluates your rules against the clicked URL.
-6.  **Launch:** It launches the specified browser (based on the matching rule or the default fallback) with the URL.
-
-## Installation
-
-*(Instructions to be added once packaging/distribution is set up. Likely involves downloading a release from GitHub.)*
+![Main window screenshot 3](screenshot%20(3).png)
 
 ## Development
 
-To run or contribute to Browser Link locally:
+### Prerequisites
 
-**Prerequisites:**
-*   [Node.js](https://nodejs.org/) (LTS version recommended)
-*   [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [Bun](https://bun.sh/) 1.2.22 or newer (bundles a recent Node runtime).
+- Optional: [Node.js](https://nodejs.org/) if you need tooling outside of Bun.
 
-**Steps:**
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/HenkDz/browser-link-3.git # Replace with actual repo URL
-    cd browser-link-3
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
-3.  **Run the development server:**
-    *(This command might vary based on your `package.json` scripts)*
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
-    This should typically start the Vite/React frontend dev server and the Electron main process concurrently.
+### Setup & scripts
 
-4.  **Build the application:**
-    *(This command might vary based on your `package.json` scripts)*
-    ```bash
-    npm run build
-    # or
-    yarn build
-    ```
-    This will compile the frontend and package the Electron application for your current platform.
+Clone the repository:
+
+```bash
+git clone https://github.com/HenkDz/browser-link-3.git
+cd browser-link-3
+```
+
+Install dependencies with Bun:
+
+```bash
+bun install
+```
+
+Start the development environment (Vite + Electron):
+
+```bash
+bun run dev
+```
+
+Create a production build of the renderer and Electron entrypoints:
+
+```bash
+bun run build
+```
+
+Generate platform installers with Electron Builder:
+
+```bash
+bun run package
+```
+
+To publish via Electron Builder, run `bun run release`.
+
+## Installation status
+
+Distribution packaging is in progress. In the meantime you can build from source using the commands above.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
-*(Add more specific contribution guidelines if desired)*
+Contributions are welcome! Please open an issue or pull request with bug reports, feature ideas, or improvements.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. *(Ensure you add a LICENSE file)* 
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
