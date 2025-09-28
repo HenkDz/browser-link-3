@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Settings, UpdateStatus } from '../../../types/index.js'; // Corrected relative path with .js
 import { Button } from '../ui/button.js'; // Use alias
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card.js'; // Use alias
@@ -113,6 +113,20 @@ export function SettingsTab({ settings, onDataRefresh, appVersion }: SettingsTab
     : null;
   const canDownloadUpdate = updateStatus.state === 'available';
   const canInstallUpdate = updateStatus.state === 'downloaded';
+  const formattedReleaseNotes = useMemo(() => {
+    if (!updateStatus.releaseNotes) {
+      return null;
+    }
+
+    const normalizeBreaks = updateStatus.releaseNotes
+      .replace(/<br\s*\/?>(\r?\n)?/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<p[^>]*>/gi, '');
+
+    const stripped = normalizeBreaks.replace(/<[^>]+>/g, '');
+    const cleaned = stripped.replace(/\n{3,}/g, '\n\n').trim();
+    return cleaned.length > 0 ? cleaned : null;
+  }, [updateStatus.releaseNotes]);
  
    // Handler for the first button (Attempt Registration)
    const handleRegisterAsDefault = useCallback(async () => {
@@ -213,11 +227,11 @@ export function SettingsTab({ settings, onDataRefresh, appVersion }: SettingsTab
                 Install &amp; Restart
               </Button>
             </div>
-            {updateStatus.releaseNotes && (
+            {formattedReleaseNotes && (
               <details className="rounded border border-border/60 bg-muted/30 p-3 text-sm">
                 <summary className="cursor-pointer font-medium">Release notes</summary>
                 <div className="mt-2 whitespace-pre-wrap text-muted-foreground text-xs">
-                  {updateStatus.releaseNotes}
+                  {formattedReleaseNotes}
                 </div>
               </details>
             )}
