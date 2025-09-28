@@ -152,9 +152,11 @@ function detectWindowsBrowsers(): Omit<DetectedBrowser, 'iconDataUrl'>[] {
                     if (executablePath && fs.existsSync(executablePath) && !foundPaths.has(executablePath)) {
                         const keyParts = currentBrowserKey.split('\\');
                         // Prioritize registry key name
-                        let derivedName = keyParts[keyParts.length - 1] || path.basename(executablePath, '.exe');
-                         // Clean up common suffixes
-                        derivedName = derivedName.replace(/\s+Stable$/i, '').replace(/\s+Beta$/i, '').replace(/\s+Canary$/i, '').replace(/\s+Developer Edition$/i, '');
+                        const derivedName = deriveRegistryBrowserName(keyParts, executablePath)
+                          .replace(/\s+Stable$/i, '')
+                          .replace(/\s+Beta$/i, '')
+                          .replace(/\s+Canary$/i, '')
+                          .replace(/\s+Developer Edition$/i, '');
                         console.log(`[Detector] Registry Found: Path=${executablePath}, Derived Name=${derivedName}`);
                         detected.push({ name: derivedName, path: executablePath });
                         foundPaths.add(executablePath);
@@ -196,4 +198,65 @@ function detectLinuxBrowsers(): Omit<DetectedBrowser, 'iconDataUrl'>[] {
         }
     }
     return detected;
-} 
+}
+
+const REGISTRY_NOISE_SEGMENTS = new Set(['defaulticon', 'command', 'open', 'shell', 'capabilities', 'urlassociations']);
+
+function deriveRegistryBrowserName(keyParts: string[], executablePath: string): string {
+    const lowerParts = keyParts.map(part => part.trim()).filter(Boolean);
+    const indexStartMenu = lowerParts.findIndex(part => part.toLowerCase().includes('startmenuinternet'));
+    let candidate: string | undefined;
+
+    if (indexStartMenu >= 0 && indexStartMenu < lowerParts.length - 1) {
+        candidate = lowerParts[indexStartMenu + 1];
+    }
+
+    if (!candidate) {
+        for (let i = lowerParts.length - 1; i >= 0; i--) {
+            const segment = lowerParts[i];
+            if (!REGISTRY_NOISE_SEGMENTS.has(segment.toLowerCase())) {
+                candidate = segment;
+                break;
+            }
+        }
+    }
+
+    if (!candidate) {
+        const grandParent = path.basename(path.dirname(path.dirname(executablePath)));
+        const parent = path.basename(path.dirname(executablePath));
+        if (grandParent && grandParent.toLowerCase() !== 'application') {
+            candidate = grandParent;
+        } else if (parent && parent.toLowerCase() !== 'application') {
+            candidate = parent;
+        }
+    }
+
+    if (!candidate) {
+        candidate = path.basename(executablePath, '.exe');
+    }
+
+    if (candidate) {
+        const dotParts = candidate.split('.').filter(Boolean);
+        if (dotParts.length > 0) {
+            while (dotParts.length > 1 && /^[A-Z0-9]{6,}$/.test(dotParts[dotParts.length - 1])) {
+                dotParts.pop();
+            }
+
+            if (dotParts.length > 0) {
+                candidate = dotParts.length === 1 ? dotParts[0] : dotParts.join(' ');
+            }
+        }
+    }
+
+    const cleaned = candidate
+        .replace(/[_-]+/g, ' ')
+        .replace(/\.exe$/i, '')
+        .replace(/\s+application$/i, '')
+        .trim();
+
+    if (!cleaned || cleaned.length === 0) {
+        return path.basename(executablePath, '.exe');
+    }
+
+    return cleaned;
+}

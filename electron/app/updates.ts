@@ -1,10 +1,11 @@
 import { app, BrowserWindow } from 'electron';
 import { autoUpdater, UpdateCheckResult } from 'electron-updater';
 import type { AppInfo, UpdateStatus } from '../../types/index.js';
-import type { UpdateInfo, ProgressInfo } from 'electron-updater';
+import type { UpdateInfo, ProgressInfo, UpdateDownloadedEvent } from 'electron-updater';
 
 let windowAccessor: (() => BrowserWindow | null) | null = null;
 let latestAvailableVersion: string | undefined;
+let lastUpdateInfo: UpdateInfo | null = null;
 const UPDATE_CHANNEL = 'auto-update-status';
 
 function sendStatusToRenderer(status: UpdateStatus): void {
@@ -28,6 +29,7 @@ autoUpdater.on('checking-for-update', () => {
 
 autoUpdater.on('update-available', (info: UpdateInfo) => {
   latestAvailableVersion = info.version;
+  lastUpdateInfo = info;
   sendStatusToRenderer({
     state: 'available',
     currentVersion: app.getVersion(),
@@ -38,6 +40,7 @@ autoUpdater.on('update-available', (info: UpdateInfo) => {
 
 autoUpdater.on('update-not-available', (info: UpdateInfo) => {
   latestAvailableVersion = undefined;
+  lastUpdateInfo = info ?? null;
   sendStatusToRenderer({
     state: 'not-available',
     currentVersion: app.getVersion(),
@@ -54,17 +57,19 @@ autoUpdater.on('download-progress', (progress: ProgressInfo) => {
   });
 });
 
-autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
-  latestAvailableVersion = info.version;
+autoUpdater.on('update-downloaded', (event: UpdateDownloadedEvent) => {
+  latestAvailableVersion = event.version;
+  lastUpdateInfo = event;
   sendStatusToRenderer({
     state: 'downloaded',
     currentVersion: app.getVersion(),
-    availableVersion: info.version,
-    releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : null
+    availableVersion: event.version,
+    releaseNotes: typeof event.releaseNotes === 'string' ? event.releaseNotes : null
   });
 });
 
 autoUpdater.on('error', (error: Error) => {
+  lastUpdateInfo = null;
   sendStatusToRenderer({
     state: 'error',
     currentVersion: app.getVersion(),
@@ -84,12 +89,14 @@ export function initializeAutoUpdater(getWindow: () => BrowserWindow | null): vo
 function toStatusFromResult(result: UpdateCheckResult | null): UpdateStatus {
   const currentVersion = app.getVersion();
   if (!result) {
+    lastUpdateInfo = null;
     return {
       state: 'not-available',
       currentVersion
     };
   }
 
+  lastUpdateInfo = result.updateInfo ?? null;
   const available = result.updateInfo?.version;
   latestAvailableVersion = available;
 
@@ -136,8 +143,11 @@ export async function checkForUpdates(silent = false): Promise<UpdateStatus> {
 
 export async function downloadUpdate(): Promise<UpdateStatus> {
   try {
-    const info = await autoUpdater.downloadUpdate();
-    const details = info as UpdateInfo;
+    await autoUpdater.downloadUpdate();
+    const details = lastUpdateInfo;
+    if (!details) {
+      throw new Error('No update metadata available after download.');
+    }
     latestAvailableVersion = details.version ?? latestAvailableVersion;
     const status: UpdateStatus = {
       state: 'downloaded',
